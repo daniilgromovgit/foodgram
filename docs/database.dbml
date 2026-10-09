@@ -1,0 +1,78 @@
+Table recipes {
+  id integer [primary key]
+  name varchar
+  author_id integer
+}
+
+Table ingredients {
+  id integer [primary key]
+  name varchar
+  measurement_unit varchar
+}
+
+Table recipe_ingredients {
+  id integer [primary key]
+  recipe_id integer
+  ingredient_id integer
+  amount integer
+}
+
+Ref: recipe_ingredients.recipe_id > recipes.id
+Ref: recipe_ingredients.ingredient_id > ingredients.id
+
+Table tags {
+  id integer [primary key]
+  name varchar
+  slug varchar [unique]
+}
+
+Table recipe_tags {
+  recipe_id integer
+  tag_id integer
+}
+
+Ref: recipe_tags.recipe_id > recipes.id
+Ref: recipe_tags.tag_id > tags.id
+
+Table users {
+  id integer [primary key]
+  email varchar [unique]
+  username varchar [unique]
+  first_name varchar
+  last_name varchar
+  avatar varchar
+}
+
+Ref: recipes.author_id > users.id
+
+Table favorites {
+  user_id integer
+  recipe_id integer
+}
+
+Ref: favorites.user_id > users.id
+Ref: favorites.recipe_id > recipes.id
+
+Table subscriptions {
+  follower_id integer
+  following_id integer
+
+  indexes {
+    (follower_id, following_id) [unique]
+  }
+}
+
+Ref: subscriptions.follower_id > users.id
+Ref: subscriptions.following_id > users.id
+
+Table shopping_cart {
+  user_id integer
+  recipe_id integer
+
+  indexes {
+    (user_id, recipe_id) [unique]
+  }
+}
+
+Ref: shopping_cart.user_id > users.id
+Ref: shopping_cart.recipe_id > recipes.id
