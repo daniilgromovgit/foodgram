@@ -1,4 +1,24 @@
-Находясь в папке infra, выполните команду docker-compose up. При выполнении этой команды контейнер frontend, описанный в docker-compose.yml, подготовит файлы, необходимые для работы фронтенд-приложения, а затем прекратит свою работу.
+# Foodgram
 
-По адресу http://localhost изучите фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификацию API.
+Учебный проект сервиса рецептов.
 
+## Статус
+
+Проект находится на этапе проектирования моделей и базовой настройки backend.
+
+## Структура
+
+- `frontend/` — frontend-приложение
+- `backend/` — Django backend
+- `infra/` — Docker и nginx
+- `docs/` — документация и схема базы данных
+
+## Локальный запуск frontend
+
+```bash
+cd infra
+docker compose up
+```
+## После запуска
+- http://localhost — приложение
+- http://localhost/api/docs/ — документация API
