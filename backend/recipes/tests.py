@@ -1,7 +1,7 @@
 import pytest
 from django.db import IntegrityError
 
-from recipes.models import Tag
+from recipes.models import Ingredient, Tag
 
 
 @pytest.mark.django_db
@@ -23,3 +23,10 @@ def test_tag_name_unique():
     Tag.objects.create(name="Завтрак", slug="breakfast")
     with pytest.raises(IntegrityError):
         Tag.objects.create(name="Завтрак", slug="dinner")
+
+
+@pytest.mark.django_db
+def test_ingredient_creation():
+    ingredient = Ingredient.objects.create(name="сахар", measurement_unit="г")
+    assert ingredient.name == "сахар"
+    assert ingredient.measurement_unit == "г"
