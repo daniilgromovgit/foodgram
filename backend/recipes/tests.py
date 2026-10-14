@@ -7,6 +7,7 @@ from recipes.models import (
     Recipe,
     RecipeIngredient,
     ShoppingCart,
+    Subscription,
     Tag,
 )
 
@@ -148,3 +149,35 @@ def test_shopping_cart_creation(user, recipe):
     )
     assert shopping_cart.user == user
     assert shopping_cart.recipe == recipe
+
+
+@pytest.mark.django_db
+def test_subscription_creation(user, user2):
+    subscription = Subscription.objects.create(
+        follower=user2,
+        following=user,
+    )
+    assert subscription.follower == user2
+    assert subscription.following == user
+
+
+@pytest.mark.django_db
+def test_subscription_unique_follower_following(user, user2):
+    Subscription.objects.create(
+        follower=user2,
+        following=user,
+    )
+    with pytest.raises(IntegrityError):
+        Subscription.objects.create(
+            follower=user2,
+            following=user,
+        )
+
+
+@pytest.mark.django_db
+def test_user_cannot_subscribe_to_self(user):
+    with pytest.raises(IntegrityError):
+        Subscription.objects.create(
+            follower=user,
+            following=user,
+        )

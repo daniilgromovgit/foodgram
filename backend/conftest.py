@@ -5,7 +5,18 @@ from django.contrib.auth import get_user_model
 @pytest.fixture
 def user():
     return get_user_model().objects.create_user(
-        username="testuser", password="testpassword"
+        username="testuser",
+        password="testpassword",
+        email="test@example.com",
+    )
+
+
+@pytest.fixture
+def user2():
+    return get_user_model().objects.create_user(
+        username="testuser2",
+        password="testpassword",
+        email="test2@example.com",
     )
 
 
