@@ -51,18 +51,31 @@ class RecipeIngredient(models.Model):
         ]
 
 
-class Favorite(models.Model):
+class UserRecipeRelation(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="%(class)ss",
     )
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name="favorites"
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="%(class)ss",
     )
 
     class Meta:
+        abstract = True
         constraints = [
             models.UniqueConstraint(
-                fields=["recipe", "user"],
-                name="unique_recipe_user",
-            ),
+                fields=["user", "recipe"],
+                name="unique_%(class)s_user_recipe",
+            )
         ]
+
+
+class Favorite(UserRecipeRelation):
+    pass
+
+
+class ShoppingCart(UserRecipeRelation):
+    pass

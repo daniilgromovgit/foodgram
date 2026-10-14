@@ -1,7 +1,14 @@
 import pytest
 from django.db import IntegrityError
 
-from recipes.models import Favorite, Ingredient, Recipe, RecipeIngredient, Tag
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 
 
 @pytest.mark.django_db
@@ -131,3 +138,13 @@ def test_favorite_unique_user_recipe(user, recipe):
             user=user,
             recipe=recipe,
         )
+
+
+@pytest.mark.django_db
+def test_shopping_cart_creation(user, recipe):
+    shopping_cart = ShoppingCart.objects.create(
+        user=user,
+        recipe=recipe,
+    )
+    assert shopping_cart.user == user
+    assert shopping_cart.recipe == recipe
