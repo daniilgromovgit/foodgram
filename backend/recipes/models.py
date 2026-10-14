@@ -49,3 +49,20 @@ class RecipeIngredient(models.Model):
                 condition=models.Q(amount__gte=1), name="positive_amount"
             ),
         ]
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites"
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name="favorites"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recipe", "user"],
+                name="unique_recipe_user",
+            ),
+        ]
