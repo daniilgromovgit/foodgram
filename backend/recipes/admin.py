@@ -17,17 +17,17 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ("name", "measurement_unit")
-    search_fields = ("name",)
+    list_display = ('name', 'measurement_unit')
+    search_fields = ('name',)
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ("name", "author", "favorite_count")
-    search_fields = ("name", "author__username")
-    list_filter = ("tags",)
+    list_display = ('name', 'author', 'favorite_count')
+    search_fields = ('name', 'author__username')
+    list_filter = ('tags',)
 
-    @admin.display(description="В избранном")
+    @admin.display(description='В избранном')
     def favorite_count(self, obj):
         return obj.favorites.count()
 
