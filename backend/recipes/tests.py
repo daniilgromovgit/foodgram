@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
 from recipes.models import (
@@ -187,3 +188,25 @@ def test_user_cannot_subscribe_to_self(user):
             follower=user,
             following=user,
         )
+
+
+@pytest.mark.django_db
+def test_tag_name_max_length():
+    tag = Tag(
+        name='3' * 33,
+        slug='test',
+    )
+
+    with pytest.raises(ValidationError):
+        tag.full_clean()
+
+
+@pytest.mark.django_db
+def test_tag_slug_max_length():
+    tag = Tag(
+        name='test',
+        slug='3' * 33,
+    )
+
+    with pytest.raises(ValidationError):
+        tag.full_clean()
