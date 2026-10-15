@@ -17,15 +17,19 @@ class Recipe(models.Model):
     text = models.TextField()
     cooking_time = models.PositiveIntegerField()
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipes"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='recipes',
     )
-    tags = models.ManyToManyField(Tag, related_name="recipes")
-    ingredients = models.ManyToManyField(Ingredient, through="RecipeIngredient")
-    image = models.ImageField(upload_to="recipes/images/")
+    tags = models.ManyToManyField(Tag, related_name='recipes')
+    ingredients = models.ManyToManyField(
+        Ingredient, through='RecipeIngredient'
+    )
+    image = models.ImageField(upload_to='recipes/images/')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ("-created_at",)
+        ordering = ('-created_at',)
 
 
 class RecipeIngredient(models.Model):
@@ -42,11 +46,11 @@ class RecipeIngredient(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["recipe", "ingredient"],
-                name="unique_recipe_ingredient",
+                fields=['recipe', 'ingredient'],
+                name='unique_recipe_ingredient',
             ),
             models.CheckConstraint(
-                condition=models.Q(amount__gte=1), name="positive_amount"
+                condition=models.Q(amount__gte=1), name='positive_amount'
             ),
         ]
 
@@ -55,20 +59,20 @@ class UserRecipeRelation(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="%(class)ss",
+        related_name='%(class)ss',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="%(class)ss",
+        related_name='%(class)ss',
     )
 
     class Meta:
         abstract = True
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "recipe"],
-                name="unique_%(class)s_user_recipe",
+                fields=['user', 'recipe'],
+                name='unique_%(class)s_user_recipe',
             )
         ]
 
@@ -83,20 +87,24 @@ class ShoppingCart(UserRecipeRelation):
 
 class Subscription(models.Model):
     follower = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscriptions"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
     )
     following = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscribers"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscribers',
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["follower", "following"],
-                name="unique_subscription_follower_following",
+                fields=['follower', 'following'],
+                name='unique_subscription_follower_following',
             ),
             models.CheckConstraint(
-                condition=~models.Q(follower=models.F("following")),
-                name="prevent_self_subscription",
+                condition=~models.Q(follower=models.F('following')),
+                name='prevent_self_subscription',
             ),
         ]
