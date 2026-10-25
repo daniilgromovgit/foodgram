@@ -1,9 +1,15 @@
 from recipes.models import Ingredient, Recipe, Tag
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework import status, viewsets
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
+    AvatarSerializer,
     IngredientSerializer,
     RecipeSerializer,
     RecipeWriteSerializer,
@@ -67,3 +73,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(shoppingcarts__user=self.request.user)
 
         return queryset.distinct()
+
+
+class AvatarView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request):
+        serializer = AvatarSerializer(
+            request.user,
+            data=request.data,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        user = request.user
+
+        if user.avatar:
+            user.avatar.delete(save=False)
+            user.avatar = None
+            user.save(update_fields=['avatar'])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
