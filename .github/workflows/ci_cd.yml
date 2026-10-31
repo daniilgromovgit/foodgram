@@ -101,14 +101,4 @@ jobs:
             docker compose down
             docker compose up -d
             docker compose exec -T backend python manage.py migrate --noinput
-
-            if [ -n "${{ secrets.ADMIN_USERNAME }}" ] && [ -n "${{ secrets.ADMIN_EMAIL }}" ] && [ -n "${{ secrets.ADMIN_PASSWORD }}" ]; then
-              docker compose exec -T \
-                -e ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}" \
-                -e ADMIN_EMAIL="${{ secrets.ADMIN_EMAIL }}" \
-                -e ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" \
-                backend python manage.py shell -c "import os; from django.contrib.auth import get_user_model; U=get_user_model(); username=os.environ['ADMIN_USERNAME']; email=os.environ['ADMIN_EMAIL']; password=os.environ['ADMIN_PASSWORD']; existing = U.objects.filter(username=username).first() or U.objects.filter(email=email).first(); created = existing is None; user = existing or U(username=username, email=email); user.username=username; user.email=email; user.is_staff=True; user.is_superuser=True; user.set_password(password); user.save(); print('admin ensured:', username, 'created=' + str(created))"
-            else
-              echo "ADMIN secrets are not set; skipping admin bootstrap"
-            fi
             docker compose ps
