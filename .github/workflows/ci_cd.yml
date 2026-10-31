@@ -100,6 +100,8 @@ jobs:
             docker compose pull backend
             docker compose down
             docker compose up -d
+            docker compose exec -T backend python manage.py migrate --noinput
+
             if [ -n "${{ secrets.ADMIN_USERNAME }}" ] && [ -n "${{ secrets.ADMIN_EMAIL }}" ] && [ -n "${{ secrets.ADMIN_PASSWORD }}" ]; then
               docker compose exec -T \
                 -e ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}" \
