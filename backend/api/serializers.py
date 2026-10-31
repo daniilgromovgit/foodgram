@@ -98,6 +98,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time',
+            'created_at',
         )
 
     def get_is_favorited(self, obj):
@@ -226,16 +227,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ).data
 
 
-class UserCreateSerializer(DjoserUserCreateSerializer):
-    class Meta(DjoserUserCreateSerializer.Meta):
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
+class RecipeShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
@@ -248,6 +243,29 @@ class UserCreateSerializer(DjoserUserCreateSerializer):
             'last_name',
             'password',
         )
+
+
+class SubscriptionSerializer(UserSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = self.context.get('recipes_limit')
+        queryset = obj.recipes.all()
+        if recipes_limit is not None:
+            queryset = queryset[:recipes_limit]
+        return RecipeShortSerializer(
+            queryset,
+            many=True,
+            context={'request': request},
+        ).data
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
 
 
 class AvatarSerializer(serializers.ModelSerializer):
