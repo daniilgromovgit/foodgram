@@ -1,5 +1,3 @@
-version: '3.8'
-
 volumes:
   pg_data:
   static_data:
@@ -15,19 +13,23 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-foodgram_user} -d ${POSTGRES_DB:-foodgram}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
 
   backend:
-    build: ../backend
+    image: ${BACKEND_IMAGE:-docker.io/library/foodgram-backend:latest}
     container_name: foodgram-backend
     env_file:
       - .env
     volumes:
-      - static_data:/app/static
-      - media_data:/app/media
+      - static_data:/app/backend/static
+      - media_data:/app/backend/media
     depends_on:
       db:
         condition: service_healthy

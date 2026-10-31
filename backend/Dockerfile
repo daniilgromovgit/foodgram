@@ -1,14 +1,15 @@
 FROM python:3.14-slim
 
-WORKDIR /app
+WORKDIR /app/backend
 
 RUN pip install --upgrade pip
 
 COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+RUN pip install -r /app/requirements.txt
 
-COPY . /app/
+COPY backend /app/backend
+COPY data /app/data
 
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/backend/entrypoint.sh
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/backend/entrypoint.sh"]
