@@ -74,7 +74,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Деплой на ВМ
+      - name: Получить код
+        uses: actions/checkout@v4
+
+      - name: Скопировать файлы infra на сервер
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: "infra/"
+          target: "${{ secrets.PROJECT_DIR }}"
+
+      - name: Деплой на ВМ (запуск контейнеров)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -83,20 +96,20 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script: |
             set -e
-            cd ${{ secrets.PROJECT_DIR }}
-            git fetch origin
-            git checkout main
-            git pull --ff-only origin main
-            cd infra
+            # Переходим сразу в папку infra, так как scp её уже скопировал
+            cd ${{ secrets.PROJECT_DIR }}/infra
             cp -n .env.example .env || true
+            
             if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
               echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             fi
+            
             if grep -q '^BACKEND_IMAGE=' .env; then
               sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:latest|" .env
             else
               echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:latest" >> .env
             fi
+            
             docker compose pull backend
             docker compose down
             docker compose up -d
