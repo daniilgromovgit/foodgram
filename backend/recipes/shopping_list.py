@@ -10,7 +10,7 @@ SHOPPING_LIST_TEMPLATE = Engine().from_string(
             'Продукты:',
             '{% for ingredient in ingredients %}',
             '{{ forloop.counter }}. '
-            '{{ ingredient.name|capfirst }} '
+            '{{ ingredient.name }} '
             '({{ ingredient.measurement_unit }}) - '
             '{{ ingredient.total_amount }}',
             '{% empty %}',

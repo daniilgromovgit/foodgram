@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
-from django.http import FileResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -197,12 +197,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             ],
         )
 
-        return FileResponse(
-            [content],
-            as_attachment=True,
-            filename='shopping_list.txt',
-            content_type='text/plain',
+        response = HttpResponse(content, content_type='text/plain')
+        response['Content-Disposition'] = (
+            'attachment; filename="shopping_list.txt"'
         )
+        return response
 
     @action(detail=True, methods=('get',), url_path='get-link')
     def get_link(self, request, pk=None):
@@ -262,7 +261,7 @@ class UserViewSet(DjoserUserViewSet):
         methods=('post', 'delete'),
         permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, pk=None):
+    def subscribe(self, request, id=None):
         if request.method == 'POST':
             author = self.get_object()
             if request.user == author:
@@ -295,6 +294,6 @@ class UserViewSet(DjoserUserViewSet):
         get_object_or_404(
             Subscription,
             follower=request.user,
-            following_id=pk,
+            following_id=id,
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
