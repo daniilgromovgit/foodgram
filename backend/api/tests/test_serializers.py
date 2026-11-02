@@ -1,7 +1,7 @@
 import pytest
 from recipes.models import Ingredient, RecipeIngredient
 
-from api.serializers import IngredientInRecipeSerializer, UserSerializer
+from api.serializers import IngredientInRecipeReadSerializer, UserSerializer
 
 
 @pytest.mark.django_db
@@ -16,7 +16,7 @@ def test_ingredient_in_recipe_serializer(recipe):
         amount=100,
     )
 
-    serializer = IngredientInRecipeSerializer(recipe_ingredient)
+    serializer = IngredientInRecipeReadSerializer(recipe_ingredient)
     data = serializer.data
 
     assert data['id'] == ingredient.id
