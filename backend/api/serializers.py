@@ -1,8 +1,8 @@
 from collections import Counter
 
-import djoser
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (
     Favorite,
@@ -51,14 +51,14 @@ class IngredientInRecipeReadSerializer(serializers.ModelSerializer):
         read_only_fields = ('amount',)
 
 
-class UserSerializer(djoser.serializers.UserSerializer):
+class UserSerializer(DjoserUserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
 
         fields = (
-            *djoser.serializers.UserSerializer.Meta.fields,
+            *DjoserUserSerializer.Meta.fields,
             'is_subscribed',
         )
         read_only_fields = fields
