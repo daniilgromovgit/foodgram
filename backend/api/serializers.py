@@ -3,9 +3,6 @@ from collections import Counter
 import djoser
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from djoser.serializers import (
-    UserCreateSerializer as DjoserUserCreateSerializer,
-)
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (
     Favorite,
@@ -60,7 +57,7 @@ class UserSerializer(djoser.serializers.UserSerializer):
     class Meta:
         model = User
 
-        fields = fields = (
+        fields = (
             *djoser.serializers.UserSerializer.Meta.fields,
             'is_subscribed',
         )
@@ -209,39 +206,37 @@ class RecipeShortReadSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class UserCreateSerializer(DjoserUserCreateSerializer):
-    class Meta(DjoserUserCreateSerializer.Meta):
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
-
-
-class SubscriptionSerializer(UserSerializer):
+class SubscribedAuthorSerializer(UserSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
+        fields = (*UserSerializer.Meta.fields, 'recipes', 'recipes_count')
 
-    def get_recipes(self, obj):
+    def get_recipes(self, author):
         request = self.context.get('request')
-        recipes_limit = self.context.get('recipes_limit')
-        queryset = obj.recipes.all()
+        recipes_limit = (
+            request.query_params.get('recipes_limit')
+            if request is not None
+            else None
+        )
         if recipes_limit is not None:
-            queryset = queryset[:recipes_limit]
+            try:
+                recipes_limit = int(recipes_limit)
+            except (TypeError, ValueError) as err:
+                raise serializers.ValidationError(
+                    'recipes_limit должен быть целым числом.'
+                ) from err
+        recipes = author.recipes.all()
+        if recipes_limit is not None:
+            recipes = recipes[:recipes_limit]
         return RecipeShortReadSerializer(
-            queryset,
+            recipes,
             many=True,
             context={'request': request},
         ).data
 
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
+    recipes_count = serializers.ReadOnlyField(source='recipes.count')
 
 
 class AvatarSerializer(serializers.ModelSerializer):

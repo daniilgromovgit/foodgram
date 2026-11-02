@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
 
 from .models import (
     Favorite,
@@ -10,38 +11,98 @@ from .models import (
 )
 
 
+class HasRecipesCountAdmin(admin.ModelAdmin):
+    recipes_lookup_field = ''
+
+    @admin.display(description='Количество рецептов')
+    def recipes_count(self, entity):
+        return (
+            Recipe.objects.filter(**{self.recipes_lookup_field: entity})
+            .distinct()
+            .count()
+        )
+
+
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'user', 'recipe')
+    search_fields = ('user__username', 'recipe__name')
 
 
 @admin.register(Ingredient)
-class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit')
-    search_fields = ('name',)
+class IngredientAdmin(HasRecipesCountAdmin):
+    recipes_lookup_field = 'ingredients'
+    list_display = ('id', 'name', 'measurement_unit', 'recipes_count')
+    search_fields = ('name', 'measurement_unit')
+    list_filter = ('measurement_unit',)
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author', 'favorite_count')
-    search_fields = ('name', 'author__username')
-    list_filter = ('tags',)
+    list_display = (
+        'id',
+        'name',
+        'cooking_time',
+        'author',
+        'favorite_count',
+        'ingredients_html',
+        'tags_list',
+        'image_html',
+    )
+    search_fields = (
+        'name',
+        'author__username',
+        'tags__name',
+        'ingredients__name',
+    )
+    list_filter = ('tags', 'author')
 
     @admin.display(description='В избранном')
-    def favorite_count(self, obj):
-        return obj.favorites.count()
+    def favorite_count(self, recipe):
+        return recipe.favorites.count()
+
+    @admin.display(description='Продукты')
+    def ingredients_html(self, recipe):
+        ingredients = recipe.recipe_ingredients.select_related('ingredient')
+        if not ingredients:
+            return '-'
+        return mark_safe(
+            '<br>'.join(
+                (
+                    f'{recipe_ingredient.ingredient.name} '
+                    f'({recipe_ingredient.ingredient.measurement_unit})'
+                )
+                for recipe_ingredient in ingredients
+            )
+        )
+
+    @admin.display(description='Теги')
+    def tags_list(self, recipe):
+        return ', '.join(recipe.tags.values_list('name', flat=True))
+
+    @admin.display(description='Картинка')
+    def image_html(self, recipe):
+        if not recipe.image:
+            return '-'
+        return mark_safe(
+            f'<img src="{recipe.image.url}" alt="{recipe.name}" width="80" />'
+        )
 
 
 @admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'user', 'recipe')
+    search_fields = ('user__username', 'recipe__name')
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'follower', 'following')
+    search_fields = ('follower__username', 'following__username')
 
 
 @admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    pass
+class TagAdmin(HasRecipesCountAdmin):
+    recipes_lookup_field = 'tags'
+    list_display = ('id', 'name', 'slug', 'recipes_count')
+    search_fields = ('name', 'slug')

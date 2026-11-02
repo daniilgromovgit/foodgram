@@ -17,12 +17,15 @@
 ## Backend (локально)
 
 ```bash
+git clone https://github.com/your_username/foodgram.git
+cd foodgram
 cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r ../requirements.txt
 python manage.py migrate
 python manage.py load_ingredients
+python manage.py load_tags
 python manage.py runserver
 ```
 
@@ -56,10 +59,10 @@ POSTGRES_PASSWORD=foodgram_password
 
 ## Доступные адреса
 
-- `http://localhost/` — frontend
-- `http://localhost/api/` — API
-- `http://localhost/admin/` — админ-зона
-- `http://localhost/api/docs/` — документация
+- [Frontend](http://localhost/) 
+- [API](http://localhost/api/) 
+- [Админ-зона](http://localhost/admin/) 
+- [Документация API](http://localhost/api/docs/) 
 
 ## Локальный запуск frontend
 
@@ -68,8 +71,8 @@ cd infra
 docker compose up
 ```
 ## После запуска
-- http://localhost — приложение
-- http://localhost/api/docs/ — документация API
+- [Приложение](http://localhost)
+- [Документация API](http://localhost/api/docs/)
 
 ## CI/CD: Docker Hub + auto deploy
 
@@ -98,3 +101,8 @@ Workflow находится в `.github/workflows/ci_cd.yml` и делает с�
 Если эти 3 секрета заданы, workflow после запуска контейнеров выполнит
 идемпотентный bootstrap администратора (создаст пользователя, если его нет,
 или обновит email/права/пароль, если он уже существует).
+
+## Автор
+
+- ФИО: Громов Даниил Николаевич
+- Контакт: [GitHub](https://github.com/daniilgromovgit)
