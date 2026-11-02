@@ -33,7 +33,4 @@ def test_user_serializer_is_subscribed_false(user):
     assert data['id'] == user.id
     assert data['email'] == user.email
     assert data['username'] == user.username
-    assert data['is_subscribed'] is False
-
-
-# ////////////
+    assert not data['is_subscribed']
