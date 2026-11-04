@@ -62,6 +62,13 @@ jobs:
         run: |
           docker save "${{ env.BACKEND_IMAGE }}" -o foodgram-backend.tar
 
+      - name: Сохранить tar-архив как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: foodgram-backend-tar
+          path: foodgram-backend.tar
+          if-no-files-found: error
+
   deploy_to_vm:
     needs: build_and_save_backend_image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -70,6 +77,12 @@ jobs:
     steps:
       - name: Получить код
         uses: actions/checkout@v5
+
+      - name: Скачать артефакт с образом
+        uses: actions/download-artifact@v4
+        with:
+          name: foodgram-backend-tar
+          path: .
 
       - name: Подготовить SSH ключ
         shell: bash
