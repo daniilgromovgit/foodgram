@@ -1,13 +1,15 @@
 from django.template import Context, Engine
 from django.utils import timezone
 
-SHOPPING_LIST_TEMPLATE_TEXT = """
+SHOPPING_LIST_TEMPLATE_TEXT = (
+    """
 Список покупок
 Дата составления: {{ generated_at }}
 
 Продукты:
 {% for ingredient in ingredients %}
-{{ forloop.counter }}. {{ ingredient.name }} ({{ ingredient.measurement_unit }}) - {{ ingredient.total_amount }}
+{{ forloop.counter }}. {{ ingredient.name }} """
+    """({{ ingredient.measurement_unit }}) - {{ ingredient.total_amount }}
 {% empty %}
 Нет продуктов.
 {% endfor %}
@@ -20,6 +22,7 @@ SHOPPING_LIST_TEMPLATE_TEXT = """
 Нет рецептов.
 {% endfor %}
 """
+)
 
 SHOPPING_LIST_TEMPLATE = Engine().from_string(SHOPPING_LIST_TEMPLATE_TEXT)
 
