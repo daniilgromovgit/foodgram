@@ -71,17 +71,34 @@ jobs:
       - name: Получить код
         uses: actions/checkout@v4
 
-      - name: Скопировать конфиги infra на сервер
+      - name: Скопировать docker-compose.yml на сервер
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          source: |
-            infra/docker-compose.yml
-            infra/nginx.conf
-            infra/.env.example
+          source: "infra/docker-compose.yml"
+          target: "${{ secrets.PROJECT_DIR }}/infra"
+
+      - name: Скопировать nginx.conf на сервер
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: "infra/nginx.conf"
+          target: "${{ secrets.PROJECT_DIR }}/infra"
+
+      - name: Скопировать .env.example на сервер
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: "infra/.env.example"
           target: "${{ secrets.PROJECT_DIR }}/infra"
 
       - name: Скопировать образ на сервер
