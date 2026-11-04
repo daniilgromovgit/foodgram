@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BACKEND_IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/foodgram-backend
+  BACKEND_IMAGE: foodgram-backend:latest
 
 jobs:
   lint_and_tests:
@@ -45,7 +45,7 @@ jobs:
       - name: Запустить тесты
         run: pytest --tb=short -q
 
-  build_and_push_backend_image:
+  build_and_save_backend_image:
     needs: lint_and_tests
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -54,24 +54,16 @@ jobs:
       - name: Получить код
         uses: actions/checkout@v4
 
-      - name: Войти в Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Собрать backend image
+        run: |
+          docker build -t "${{ env.BACKEND_IMAGE }}" -f backend/Dockerfile .
 
-      - name: Собрать и отправить backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: backend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+      - name: Сохранить образ в tar-архив
+        run: |
+          docker save "${{ env.BACKEND_IMAGE }}" -o foodgram-backend.tar
 
   deploy_to_vm:
-    needs: build_and_push_backend_image
+    needs: build_and_save_backend_image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -89,6 +81,16 @@ jobs:
           source: "infra/"
           target: "${{ secrets.PROJECT_DIR }}"
 
+      - name: Скопировать образ на сервер
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: "foodgram-backend.tar"
+          target: "${{ secrets.PROJECT_DIR }}"
+
       - name: Деплой на ВМ (запуск контейнеров)
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -98,22 +100,18 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script: |
             set -e
-            # Переходим сразу в папку infra, так как scp её уже скопировал
             cd ${{ secrets.PROJECT_DIR }}/infra
             cp -n .env.example .env || true
 
-            if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-              echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            fi
-
             if grep -q '^BACKEND_IMAGE=' .env; then
-              sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:latest|" .env
+              sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}|" .env
             else
-              echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:latest" >> .env
+              echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" >> .env
             fi
 
-            docker compose pull backend
-            docker compose down
-            docker compose up -d
-            docker compose exec -T backend python manage.py migrate --noinput
-            docker compose ps
+            cd ${{ secrets.PROJECT_DIR }}
+            docker load -i foodgram-backend.tar
+            docker compose -f infra/docker-compose.yml down || true
+            docker compose -f infra/docker-compose.yml up -d
+            docker compose -f infra/docker-compose.yml exec -T backend python manage.py migrate --noinput
+            docker compose -f infra/docker-compose.yml ps
