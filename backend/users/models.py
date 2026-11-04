@@ -12,7 +12,10 @@ class User(AbstractUser):
         validators=[
             RegexValidator(
                 regex=settings.USERNAME_REGEX,
-                message='Никнейм может содержать только буквы, цифры и символы . @ + - _',
+                message=(
+                    'Никнейм может содержать только буквы, цифры '
+                    'и символы . @ + - _'
+                ),
             )
         ],
     )

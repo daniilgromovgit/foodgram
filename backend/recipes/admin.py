@@ -105,7 +105,8 @@ class RecipeAdmin(admin.ModelAdmin):
         return mark_safe(
             '<br>'.join(
                 (
-                    f'{item.ingredient.name} ({item.ingredient.measurement_unit}): '
+                    f'{item.ingredient.name} '
+                    f'({item.ingredient.measurement_unit}): '
                     f'{item.amount}'
                 )
                 for item in ingredients

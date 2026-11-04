@@ -92,7 +92,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             relation_name = model._meta.verbose_name
             raise ValidationError(
                 {
-                    'errors': f'Рецепт "{recipe.name}" уже добавлен в {relation_name}.'
+                    'errors': (
+                        f'Рецепт "{recipe.name}" уже добавлен '
+                        f'в {relation_name}.'
+                    )
                 }
             )
         return Response(
