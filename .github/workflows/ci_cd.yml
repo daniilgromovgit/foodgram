@@ -71,45 +71,46 @@ jobs:
       - name: Получить код
         uses: actions/checkout@v5
 
-      - name: Скопировать docker-compose.yml на сервер
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: "infra/docker-compose.yml"
-          target: "${{ secrets.PROJECT_DIR }}/infra"
+      - name: Подготовить SSH ключ
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat > ~/.ssh/deploy_key <<'EOF'
+          ${{ secrets.SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${{ secrets.SSH_PORT || '22' }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-      - name: Скопировать nginx.conf на сервер
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: "infra/nginx.conf"
-          target: "${{ secrets.PROJECT_DIR }}/infra"
+      - name: Создать директорию деплоя на сервере
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -p "${{ secrets.SSH_PORT || '22' }}" \
+            -o StrictHostKeyChecking=yes \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "mkdir -p '${{ secrets.PROJECT_DIR }}/infra'"
 
-      - name: Скопировать .env.example на сервер
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: "infra/.env.example"
-          target: "${{ secrets.PROJECT_DIR }}/infra"
+      - name: Скопировать конфиги на сервер
+        shell: bash
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -P "${{ secrets.SSH_PORT || '22' }}" \
+            -o StrictHostKeyChecking=yes \
+            infra/docker-compose.yml \
+            infra/nginx.conf \
+            infra/.env.example \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_DIR }}/infra/"
 
       - name: Скопировать образ на сервер
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: "foodgram-backend.tar"
-          target: "${{ secrets.PROJECT_DIR }}"
+        shell: bash
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -P "${{ secrets.SSH_PORT || '22' }}" \
+            -o StrictHostKeyChecking=yes \
+            foodgram-backend.tar \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_DIR }}/"
 
       - name: Деплой на ВМ (запуск контейнеров)
         uses: appleboy/ssh-action@v1.0.3
