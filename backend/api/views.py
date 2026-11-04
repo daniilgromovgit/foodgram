@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from django.db.models import Sum
-from django.http import HttpResponse
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -16,14 +17,14 @@ from recipes.models import (
 from recipes.shopping_list import build_shopping_list_content
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, ValidationError
-from rest_framework.filters import BaseFilterBackend, SearchFilter
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
 from rest_framework.response import Response
 
+from .filters import IngredientNameSearchFilter, RecipeFilterBackend
 from .pagination import FoodgramPagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
@@ -39,38 +40,14 @@ from .serializers import (
 User = get_user_model()
 
 
-class IngredientNameSearchFilter(SearchFilter):
-    search_param = 'name'
+class CompatibleFileResponse(FileResponse):
+    @property
+    def content(self):
+        return getattr(self, '_content', b'')
 
-
-class RecipeFilterBackend(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        author = request.query_params.get('author')
-        tags = request.query_params.getlist('tags')
-        is_favorited = request.query_params.get('is_favorited')
-        is_in_shopping_cart = request.query_params.get('is_in_shopping_cart')
-
-        if author:
-            queryset = queryset.filter(author_id=author)
-
-        if tags:
-            queryset = queryset.filter(tags__slug__in=tags)
-
-        if is_favorited == '1':
-            queryset = (
-                queryset.filter(favorites__user=request.user)
-                if request.user.is_authenticated
-                else queryset.none()
-            )
-
-        if is_in_shopping_cart == '1':
-            queryset = (
-                queryset.filter(shoppingcarts__user=request.user)
-                if request.user.is_authenticated
-                else queryset.none()
-            )
-
-        return queryset.distinct()
+    @content.setter
+    def content(self, value):
+        self._content = value
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -105,19 +82,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    def _add_to_relation(self, model, relation_name):
+    def _add_to_relation(self, model):
         recipe = self.get_object()
         _, created = model.objects.get_or_create(
             user=self.request.user,
             recipe=recipe,
         )
         if not created:
+            relation_name = model._meta.verbose_name
             raise ValidationError(
                 {
-                    'errors': (
-                        f'Рецепт "{recipe.name}" уже добавлен в '
-                        f'{relation_name}.'
-                    )
+                    'errors': f'Рецепт "{recipe.name}" уже добавлен в {relation_name}.'
                 }
             )
         return Response(
@@ -143,7 +118,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         if request.method == 'POST':
-            return self._add_to_relation(Favorite, 'избранное')
+            return self._add_to_relation(Favorite)
         return self._remove_from_relation(pk, Favorite)
 
     @action(
@@ -153,7 +128,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         if request.method == 'POST':
-            return self._add_to_relation(ShoppingCart, 'список покупок')
+            return self._add_to_relation(ShoppingCart)
         return self._remove_from_relation(pk, ShoppingCart)
 
     @action(
@@ -196,21 +171,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 for recipe in recipes
             ],
         )
-
-        response = HttpResponse(content, content_type='text/plain')
-        response['Content-Disposition'] = (
-            'attachment; filename="shopping_list.txt"'
+        response = CompatibleFileResponse(
+            ContentFile(content.encode('utf-8')),
+            as_attachment=True,
+            filename='shopping_list.txt',
+            content_type='text/plain',
         )
+        response.content = content.encode('utf-8')
         return response
 
     @action(detail=True, methods=('get',), url_path='get-link')
     def get_link(self, request, pk=None):
-        if not Recipe.objects.filter(id=pk).exists():
-            raise NotFound('Рецепт не найден.')
-        short_link = request.build_absolute_uri(
-            reverse('recipe-short-link', kwargs={'pk': pk})
+        get_object_or_404(Recipe, pk=pk)
+        return Response(
+            {
+                'short-link': request.build_absolute_uri(
+                    reverse('recipe-short-link', args=[pk])
+                )
+            }
         )
-        return Response({'short-link': short_link})
 
 
 class UserViewSet(DjoserUserViewSet):
@@ -262,38 +241,38 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def subscribe(self, request, id=None):
-        if request.method == 'POST':
-            author = self.get_object()
-            if request.user == author:
-                raise ValidationError(
-                    {'errors': 'Нельзя подписаться на самого себя.'}
-                )
-
-            _, created = Subscription.objects.get_or_create(
+        if request.method != 'POST':
+            get_object_or_404(
+                Subscription,
                 follower=request.user,
-                following=author,
-            )
-            if not created:
-                raise ValidationError(
-                    {
-                        'errors': (
-                            f'Подписка на пользователя '
-                            f'"{author.username}" уже существует.'
-                        )
-                    }
-                )
+                following_id=id,
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
-            return Response(
-                SubscribedAuthorSerializer(
-                    author,
-                    context={'request': request},
-                ).data,
-                status=status.HTTP_201_CREATED,
+        author = self.get_object()
+        if request.user == author:
+            raise ValidationError(
+                {'errors': 'Нельзя подписаться на самого себя.'}
             )
 
-        get_object_or_404(
-            Subscription,
+        _, created = Subscription.objects.get_or_create(
             follower=request.user,
-            following_id=id,
-        ).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            following=author,
+        )
+        if not created:
+            raise ValidationError(
+                {
+                    'errors': (
+                        f'Подписка на пользователя '
+                        f'"{author.username}" уже существует.'
+                    )
+                }
+            )
+
+        return Response(
+            SubscribedAuthorSerializer(
+                author,
+                context={'request': request},
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )

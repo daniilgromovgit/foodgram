@@ -12,20 +12,15 @@ class BaseJsonFixtureCommand(BaseCommand):
         try:
             file_path = settings.BASE_DIR.parent / 'data' / self.fixture_name
             with open(file_path, encoding='utf-8') as file:
-                items = json.load(file)
-
-            objects_to_create = [self.model(**item) for item in items]
-            records_before = self.model.objects.count()
-            self.model.objects.bulk_create(
-                objects_to_create,
-                ignore_conflicts=True,
-            )
-            created_count = self.model.objects.count() - records_before
+                self.model.objects.bulk_create(
+                    [self.model(**item) for item in json.load(file)],
+                    ignore_conflicts=True,
+                )
 
             self.stdout.write(
                 self.style.SUCCESS(
                     f'Загружено новых записей из {self.fixture_name}: '
-                    f'{created_count}'
+                    f'{self.model.objects.count()}'
                 )
             )
         except Exception as error:

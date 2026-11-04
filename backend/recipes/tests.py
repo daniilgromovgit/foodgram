@@ -67,6 +67,21 @@ def test_recipe_tag_relationship(recipe):
 
 
 @pytest.mark.django_db
+def test_related_name_recipes_count(recipe):
+    ingredient = Ingredient.objects.create(name='сахар', measurement_unit='г')
+    tag = Tag.objects.create(name='Завтрак', slug='breakfast')
+    recipe.tags.add(tag)
+    RecipeIngredient.objects.create(
+        recipe=recipe,
+        ingredient=ingredient,
+        amount=100,
+    )
+
+    assert tag.recipes.count() == 1
+    assert ingredient.recipes.count() == 1
+
+
+@pytest.mark.django_db
 def test_recipe_ingredient_relationship(recipe):
     ingredient = Ingredient.objects.create(name='сахар', measurement_unit='г')
     recipe_ingredient = RecipeIngredient.objects.create(

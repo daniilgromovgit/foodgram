@@ -17,9 +17,6 @@ from rest_framework import serializers
 
 User = get_user_model()
 
-MIN_INGREDIENT_AMOUNT = 1
-MIN_COOKING_TIME = 1
-
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,13 +39,8 @@ class IngredientInRecipeReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeIngredient
-        fields = (
-            'id',
-            'name',
-            'measurement_unit',
-            'amount',
-        )
-        read_only_fields = ('amount',)
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+        read_only_fields = fields
 
 
 class UserSerializer(DjoserUserSerializer):
@@ -56,7 +48,6 @@ class UserSerializer(DjoserUserSerializer):
 
     class Meta:
         model = User
-
         fields = (
             *DjoserUserSerializer.Meta.fields,
             'is_subscribed',
@@ -76,21 +67,6 @@ class UserSerializer(DjoserUserSerializer):
         )
 
 
-RECIPE_FIELDS = (
-    'id',
-    'tags',
-    'author',
-    'ingredients',
-    'is_favorited',
-    'is_in_shopping_cart',
-    'name',
-    'image',
-    'text',
-    'cooking_time',
-    'created_at',
-)
-
-
 class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(read_only=True)
@@ -102,8 +78,20 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = RECIPE_FIELDS
-        read_only_fields = RECIPE_FIELDS
+        fields = (
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
+            'created_at',
+        )
+        read_only_fields = fields
 
     def _check_user_relation(self, recipe, model):
         request = self.context.get('request')
@@ -125,7 +113,11 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 class IngredientInputSerializer(serializers.Serializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField(min_value=MIN_INGREDIENT_AMOUNT)
+    amount = serializers.IntegerField(
+        min_value=RecipeIngredient._meta.get_field('amount')
+        .validators[0]
+        .limit_value
+    )
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -134,7 +126,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         many=True, queryset=Tag.objects.all(), allow_empty=False
     )
     image = Base64ImageField()
-    cooking_time = serializers.IntegerField(min_value=MIN_COOKING_TIME)
+    cooking_time = serializers.IntegerField(
+        min_value=Recipe._meta.get_field('cooking_time')
+        .validators[0]
+        .limit_value
+    )
 
     class Meta:
         model = Recipe
@@ -158,15 +154,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def _set_ingredients(self, recipe, ingredients):
         recipe.recipe_ingredients.all().delete()
-        recipe_ingredients = [
-            RecipeIngredient(
-                recipe=recipe,
-                ingredient=ingredient['id'],
-                amount=ingredient['amount'],
-            )
-            for ingredient in ingredients
-        ]
-        RecipeIngredient.objects.bulk_create(recipe_ingredients)
+        RecipeIngredient.objects.bulk_create(
+            [
+                RecipeIngredient(
+                    recipe=recipe,
+                    ingredient=ingredient['id'],
+                    amount=ingredient['amount'],
+                )
+                for ingredient in ingredients
+            ]
+        )
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -175,12 +172,14 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             return super().update(instance, validated_data)
 
     def _validate_duplicates(self, items, item_name):
-        counts = Counter(items)
-        for item, count in counts.items():
-            if count > 1:
-                raise serializers.ValidationError(
-                    f'{item_name}: {item} не должны повторяться.'
-                )
+        duplicates = sorted(
+            {item for item, count in Counter(items).items() if count > 1}
+        )
+        if duplicates:
+            duplicated_items = ', '.join(map(str, duplicates))
+            raise serializers.ValidationError(
+                f'{item_name}: {duplicated_items} не должны повторяться.'
+            )
 
     def validate_ingredients(self, ingredients):
         ingredient_list = [ingredient['id'] for ingredient in ingredients]
@@ -216,9 +215,7 @@ class SubscribedAuthorSerializer(UserSerializer):
     def get_recipes(self, author):
         request = self.context.get('request')
         recipes_limit = (
-            request.query_params.get('recipes_limit')
-            if request is not None
-            else None
+            request.GET.get('recipes_limit') if request is not None else None
         )
         if recipes_limit is not None:
             try:
@@ -236,7 +233,8 @@ class SubscribedAuthorSerializer(UserSerializer):
             context={'request': request},
         ).data
 
-    recipes_count = serializers.ReadOnlyField(source='recipes.count')
+    def get_recipes_count(self, author):
+        return author.recipes.count()
 
 
 class AvatarSerializer(serializers.ModelSerializer):

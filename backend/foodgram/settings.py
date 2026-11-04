@@ -1,5 +1,4 @@
 import os
-import sys
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -7,9 +6,9 @@ from django.core.management.utils import get_random_secret_key
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY') or get_random_secret_key()
+USERNAME_REGEX = r'^[\w.@+-]+\Z'
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
@@ -94,12 +93,11 @@ DATABASES = {
     }
 }
 
-if any('pytest' in arg for arg in sys.argv):
+if os.getenv('USE_SQLITE_FOR_TESTS') == '1':
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {

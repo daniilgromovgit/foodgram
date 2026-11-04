@@ -1,11 +1,10 @@
 from django.conf import settings
-from django.core.validators import MinValueValidator
 from django.db import models
 
 
 class Tag(models.Model):
-    name = models.CharField('Название тега', unique=True, max_length=32)
-    slug = models.SlugField('Слаг тега', unique=True, max_length=32)
+    name = models.CharField('Название', unique=True, max_length=32)
+    slug = models.SlugField('Слаг', unique=True, max_length=32)
 
     class Meta:
         ordering = ('name',)
@@ -14,7 +13,7 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField('Название ингредиента', max_length=128)
+    name = models.CharField('Название', max_length=128)
     measurement_unit = models.CharField('Единица измерения', max_length=64)
 
     class Meta:
@@ -30,11 +29,9 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    name = models.CharField('Название рецепта', max_length=256)
+    name = models.CharField('Название', max_length=256)
     text = models.TextField('Описание')
-    cooking_time = models.PositiveIntegerField(
-        'Время приготовления', validators=[MinValueValidator(1)]
-    )
+    cooking_time = models.PositiveIntegerField('Время приготовления')
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -49,6 +46,7 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
+        related_name='recipes',
         verbose_name='Ингредиенты',
     )
     image = models.ImageField('Изображение', upload_to='recipes/images/')
@@ -73,10 +71,7 @@ class RecipeIngredient(models.Model):
         related_name='recipe_ingredients',
         verbose_name='Ингредиент',
     )
-    amount = models.PositiveIntegerField(
-        'Количество',
-        validators=[MinValueValidator(1)],
-    )
+    amount = models.PositiveIntegerField('Количество')
 
     class Meta:
         verbose_name = 'ингредиент в рецепте'
@@ -85,10 +80,7 @@ class RecipeIngredient(models.Model):
             models.UniqueConstraint(
                 fields=['recipe', 'ingredient'],
                 name='unique_recipe_ingredient',
-            ),
-            models.CheckConstraint(
-                condition=models.Q(amount__gte=1), name='positive_amount'
-            ),
+            )
         ]
 
 
@@ -118,14 +110,12 @@ class UserRecipeRelation(models.Model):
 
 class Favorite(UserRecipeRelation):
     class Meta(UserRecipeRelation.Meta):
-        ordering = ('id',)
         verbose_name = 'избранное'
         verbose_name_plural = 'избранное'
 
 
 class ShoppingCart(UserRecipeRelation):
     class Meta(UserRecipeRelation.Meta):
-        ordering = ('id',)
         verbose_name = 'запись корзины'
         verbose_name_plural = 'корзина'
 
