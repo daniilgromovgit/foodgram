@@ -1,10 +1,42 @@
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.validators import MinValueValidator
 from django.db import models
+
+MIN_COOKING_TIME = 1
+MIN_INGREDIENT_AMOUNT = 1
+
+
+class User(AbstractUser):
+    username_validator = UnicodeUsernameValidator()
+
+    username = models.CharField(
+        'Никнейм',
+        max_length=150,
+        unique=True,
+        validators=[username_validator],
+    )
+    email = models.EmailField('Электронная почта', max_length=254, unique=True)
+    first_name = models.CharField('Имя', max_length=150)
+    last_name = models.CharField('Фамилия', max_length=150)
+    avatar = models.ImageField(
+        'Аватар', upload_to='users/', blank=True, null=True
+    )
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+    class Meta:
+        db_table = 'users_user'
+        ordering = ('username',)
+        verbose_name = 'пользователь'
+        verbose_name_plural = 'пользователи'
 
 
 class Tag(models.Model):
     name = models.CharField('Название', unique=True, max_length=32)
-    slug = models.SlugField('Слаг', unique=True, max_length=32)
+    slug = models.SlugField('Идентификатор', unique=True, max_length=32)
 
     class Meta:
         ordering = ('name',)
@@ -31,7 +63,10 @@ class Ingredient(models.Model):
 class Recipe(models.Model):
     name = models.CharField('Название', max_length=256)
     text = models.TextField('Описание')
-    cooking_time = models.PositiveIntegerField('Время приготовления')
+    cooking_time = models.PositiveIntegerField(
+        'Время приготовления',
+        validators=[MinValueValidator(MIN_COOKING_TIME)],
+    )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -71,7 +106,10 @@ class RecipeIngredient(models.Model):
         related_name='recipe_ingredients',
         verbose_name='Ингредиент',
     )
-    amount = models.PositiveIntegerField('Количество')
+    amount = models.PositiveIntegerField(
+        'Количество',
+        validators=[MinValueValidator(MIN_INGREDIENT_AMOUNT)],
+    )
 
     class Meta:
         verbose_name = 'ингредиент в рецепте'
@@ -80,7 +118,11 @@ class RecipeIngredient(models.Model):
             models.UniqueConstraint(
                 fields=['recipe', 'ingredient'],
                 name='unique_recipe_ingredient',
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name='positive_amount',
+            ),
         ]
 
 

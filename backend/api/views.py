@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
-from django.db.models import Sum
-from django.http import FileResponse
+from django.db.models import F, Sum
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -38,16 +37,6 @@ from .serializers import (
 )
 
 User = get_user_model()
-
-
-class CompatibleFileResponse(FileResponse):
-    @property
-    def content(self):
-        return getattr(self, '_content', b'')
-
-    @content.setter
-    def content(self, value):
-        self._content = value
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -89,12 +78,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe,
         )
         if not created:
-            relation_name = model._meta.verbose_name
             raise ValidationError(
                 {
                     'errors': (
                         f'Рецепт "{recipe.name}" уже добавлен '
-                        f'в {relation_name}.'
+                        f'в {model._meta.verbose_name}.'
                     )
                 }
             )
@@ -144,9 +132,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             RecipeIngredient.objects.filter(
                 recipe__shoppingcarts__user=request.user
             )
-            .values('ingredient__name', 'ingredient__measurement_unit')
+            .values(
+                name=F('ingredient__name'),
+                measurement_unit=F('ingredient__measurement_unit'),
+            )
             .annotate(total_amount=Sum('amount'))
-            .order_by('ingredient__name')
+            .order_by('name')
         )
         recipes = (
             Recipe.objects.filter(shoppingcarts__user=request.user)
@@ -155,37 +146,33 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .order_by('name')
             .distinct()
         )
+        recipes = [
+            {
+                'name': recipe.name,
+                'author': recipe.author.username,
+                'tags': [tag.name for tag in recipe.tags.all()],
+            }
+            for recipe in recipes
+        ]
 
         content = build_shopping_list_content(
-            ingredients=[
-                {
-                    'name': item['ingredient__name'],
-                    'measurement_unit': item['ingredient__measurement_unit'],
-                    'total_amount': item['total_amount'],
-                }
-                for item in ingredients
-            ],
-            recipes=[
-                {
-                    'name': recipe.name,
-                    'author': recipe.author.username,
-                    'tags': [tag.name for tag in recipe.tags.all()],
-                }
-                for recipe in recipes
-            ],
+            ingredients=ingredients,
+            recipes=recipes,
         )
-        response = CompatibleFileResponse(
-            ContentFile(content.encode('utf-8')),
-            as_attachment=True,
-            filename='shopping_list.txt',
-            content_type='text/plain',
+        return HttpResponse(
+            content,
+            content_type='text/plain; charset=utf-8',
+            headers={
+                'Content-Disposition': (
+                    'attachment; filename="shopping_list.txt"'
+                )
+            },
         )
-        response.content = content.encode('utf-8')
-        return response
 
     @action(detail=True, methods=('get',), url_path='get-link')
     def get_link(self, request, pk=None):
-        get_object_or_404(Recipe, pk=pk)
+        if not Recipe.objects.filter(pk=pk).exists():
+            raise Http404(f'Рецепт с id={pk} не найден.')
         return Response(
             {
                 'short-link': request.build_absolute_uri(
@@ -230,13 +217,11 @@ class UserViewSet(DjoserUserViewSet):
         ).order_by('id')
         page = self.paginate_queryset(queryset)
         serializer = SubscribedAuthorSerializer(
-            page if page is not None else queryset,
+            page,
             many=True,
             context={'request': request},
         )
-        if page is not None:
-            return self.get_paginated_response(serializer.data)
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     @action(
         detail=True,

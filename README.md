@@ -64,6 +64,10 @@ POSTGRES_PASSWORD=foodgram_password
 - [Админ-зона](http://localhost/admin/) 
 - [Документация API](http://localhost/api/docs/) 
 
+## Адрес сайта
+
+- [Production](http://foddygramm.duckdns.org/)
+
 ## Локальный запуск frontend
 
 ```bash
@@ -101,6 +105,22 @@ Workflow находится в `.github/workflows/ci_cd.yml` и делает с�
 Если эти 3 секрета заданы, workflow после запуска контейнеров выполнит
 идемпотентный bootstrap администратора (создаст пользователя, если его нет,
 или обновит email/права/пароль, если он уже существует).
+
+После деплоя workflow также автоматически выполняет:
+
+- `python manage.py migrate --noinput`
+- `python manage.py prepare_review_data`
+
+Для подготовки ревью-данных на сервере:
+
+```bash
+docker compose exec backend python manage.py prepare_review_data
+```
+
+Команда обеспечивает:
+
+- доступ в админку: `review` / `review@admin.ru` / `revw1admn`;
+- минимум 7 рецептов, из них минимум 4 у одного пользователя, отличного от `review`.
 
 ## Автор
 
