@@ -146,6 +146,6 @@ jobs:
             cd "${{ secrets.PROJECT_DIR }}"
             docker load -i foodgram-backend.tar
             docker compose -f infra/docker-compose.yml down || true
-            docker compose -f infra/docker-compose.yml up -d
-            docker compose -f infra/docker-compose.yml exec -T backend python manage.py migrate --noinput
+            docker compose -f infra/docker-compose.yml up -d --wait
             docker compose -f infra/docker-compose.yml ps
+            docker compose -f infra/docker-compose.yml logs --tail=50 backend
