@@ -7,8 +7,7 @@ SHOPPING_LIST_TEMPLATE_TEXT = """
 
 Продукты:
 {% for ingredient in ingredients %}
-{{ forloop.counter }}. {{ ingredient.name }}
-({{ ingredient.measurement_unit }}) - {{ ingredient.total_amount }}
+{{ forloop.counter }}. {{ ingredient.name }} ({{ ingredient.measurement_unit }}) - {{ ingredient.total_amount }}
 {% empty %}
 Нет продуктов.
 {% endfor %}
