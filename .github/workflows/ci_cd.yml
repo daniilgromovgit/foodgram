@@ -84,6 +84,22 @@ jobs:
           name: foodgram-backend-tar
           path: .
 
+      - name: Проверить настройки SSH-деплоя
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          for name in SSH_HOST SSH_USER SSH_KEY PROJECT_DIR; do
+            if [ -z "${!name}" ]; then
+              echo "Required GitHub Actions secret is missing: ${name}"
+              exit 1
+            fi
+          done
+
       - name: Подготовить SSH ключ
         shell: bash
         run: |
@@ -123,6 +139,16 @@ jobs:
             -P "${{ secrets.SSH_PORT || '22' }}" \
             -o StrictHostKeyChecking=yes \
             foodgram-backend.tar \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_DIR }}/"
+
+      - name: Скопировать frontend и документацию на сервер
+        shell: bash
+        run: |
+          scp -r -i ~/.ssh/deploy_key \
+            -P "${{ secrets.SSH_PORT || '22' }}" \
+            -o StrictHostKeyChecking=yes \
+            frontend \
+            docs \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_DIR }}/"
 
       - name: Деплой на ВМ (запуск контейнеров)
