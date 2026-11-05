@@ -78,33 +78,25 @@ docker compose up
 - [Приложение](http://localhost)
 - [Документация API](http://localhost/api/docs/)
 
-## CI/CD: Docker Hub + auto deploy
+## CI/CD: auto deploy
 
 Workflow находится в `.github/workflows/ci_cd.yml` и делает следующее:
 
 - на PR и push в `main` запускает линтер и тесты;
-- на push в `main` собирает backend image и публикует в Docker Hub;
-- по SSH подключается к ВМ, подтягивает `main`, делает `docker compose pull backend` и перезапускает сервисы.
+- на push в `main` собирает backend image и передаёт его на ВМ по SSH;
+- запускает миграции и подготовку ревью-данных.
+
+Если Docker Engine или Compose plugin отсутствуют, workflow установит их на Ubuntu-ВМ
+из системных пакетов и запустит Docker. Для этого `SSH_USER` должен иметь
+passwordless `sudo`. На других ОС Docker нужно установить вручную.
 
 Нужные GitHub Secrets:
 
-- `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN`
 - `SSH_HOST`
 - `SSH_USER`
 - `SSH_KEY`
 - `SSH_PORT` (опционально, по умолчанию 22)
-- `PROJECT_DIR` (путь до репозитория на ВМ)
-
-Опционально, для автоматического создания/обновления админа при деплое:
-
-- `ADMIN_USERNAME`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-
-Если эти 3 секрета заданы, workflow после запуска контейнеров выполнит
-идемпотентный bootstrap администратора (создаст пользователя, если его нет,
-или обновит email/права/пароль, если он уже существует).
+- `PROJECT_DIR` (путь до директории деплоя на ВМ)
 
 После деплоя workflow также автоматически выполняет:
 
