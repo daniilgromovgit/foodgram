@@ -9,10 +9,6 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: foodgram-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   BACKEND_IMAGE: foodgram-backend:latest
 
@@ -73,6 +69,9 @@ jobs:
     needs: build_and_save_backend_image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: foodgram-production-deploy
+      cancel-in-progress: false
 
     steps:
       - name: Получить код
@@ -160,6 +159,15 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script: |
             set -e
+
+            if ! command -v flock >/dev/null 2>&1; then
+              echo "The server is missing flock (util-linux); cannot safely serialize deployments."
+              exit 1
+            fi
+            exec 9>/tmp/foodgram-production-deploy.lock
+            echo "Waiting for the production deployment lock..."
+            flock -x 9
+            echo "Production deployment lock acquired."
 
             # Bootstrap Docker on Ubuntu VMs when the engine or Compose plugin is missing.
             if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
