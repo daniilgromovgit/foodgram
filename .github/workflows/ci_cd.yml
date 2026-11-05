@@ -169,6 +169,14 @@ jobs:
             flock -x 9
             echo "Production deployment lock acquired."
 
+            run_privileged() {
+              if [ "$(id -u)" -eq 0 ]; then
+                "$@"
+              else
+                sudo -n "$@"
+              fi
+            }
+
             # Bootstrap Docker on Ubuntu VMs when the engine or Compose plugin is missing.
             if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
               if [ ! -r /etc/os-release ]; then
@@ -186,18 +194,11 @@ jobs:
                 exit 1
               fi
 
-              run_privileged() {
-                if [ "$(id -u)" -eq 0 ]; then
-                  "$@"
-                else
-                  sudo -n "$@"
-                fi
-              }
-
               run_privileged apt-get update
               run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2
-              run_privileged systemctl enable --now docker
             fi
+
+            run_privileged systemctl enable --now docker
 
             if docker info >/dev/null 2>&1; then
               DOCKER_USE_SUDO=0

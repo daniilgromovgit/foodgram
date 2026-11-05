@@ -89,6 +89,8 @@ Workflow находится в `.github/workflows/ci_cd.yml` и делает с�
 Если Docker Engine или Compose plugin отсутствуют, workflow установит их на Ubuntu-ВМ
 из системных пакетов и запустит Docker. Для этого `SSH_USER` должен иметь
 passwordless `sudo`. На других ОС Docker нужно установить вручную.
+Docker включается при загрузке системы, а PostgreSQL, backend и nginx настроены
+на автоматический запуск после перезагрузки ВМ.
 
 Нужные GitHub Secrets:
 

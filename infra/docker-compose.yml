@@ -8,6 +8,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: foodgram-db
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
@@ -25,6 +26,7 @@ services:
   backend:
     image: ${BACKEND_IMAGE:-docker.io/library/foodgram-backend:latest}
     container_name: foodgram-backend
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
@@ -43,6 +45,7 @@ services:
   nginx:
     image: nginx:1.25.4-alpine
     container_name: foodgram-proxy
+    restart: unless-stopped
     ports:
       - '80:80'
     volumes:
