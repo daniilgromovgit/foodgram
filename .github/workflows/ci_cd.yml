@@ -228,7 +228,12 @@ jobs:
 
             cd "${{ secrets.PROJECT_DIR }}"
             docker_cmd load -i foodgram-backend.tar
-            docker_cmd compose -f infra/docker-compose.yml down || true
+            docker_cmd compose -f infra/docker-compose.yml down --remove-orphans || true
+            docker_cmd rm -f \
+              foodgram-front-build \
+              foodgram-db \
+              foodgram-backend \
+              foodgram-proxy || true
             docker_cmd compose -f infra/docker-compose.yml up -d
             docker_cmd compose -f infra/docker-compose.yml exec -T backend python manage.py migrate --noinput
             docker_cmd compose -f infra/docker-compose.yml ps
