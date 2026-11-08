@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import F, Sum
-from django.http import Http404, HttpResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -146,27 +146,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .order_by('name')
             .distinct()
         )
-        recipes = [
-            {
-                'name': recipe.name,
-                'author': recipe.author.username,
-                'tags': [tag.name for tag in recipe.tags.all()],
-            }
-            for recipe in recipes
-        ]
-
-        content = build_shopping_list_content(
-            ingredients=ingredients,
-            recipes=recipes,
-        )
-        return HttpResponse(
-            content,
-            content_type='text/plain; charset=utf-8',
-            headers={
-                'Content-Disposition': (
-                    'attachment; filename="shopping_list.txt"'
-                )
-            },
+        return FileResponse(
+            build_shopping_list_content(
+                ingredients=ingredients,
+                recipes=recipes,
+            ),
+            as_attachment=True,
+            filename='shopping_list.txt',
+            content_type='text/plain',
         )
 
     @action(detail=True, methods=('get',), url_path='get-link')
@@ -212,16 +199,17 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=(IsAuthenticated,),
     )
     def subscriptions(self, request):
-        queryset = User.objects.filter(
-            following_subscriptions__follower=request.user
-        ).order_by('id')
-        page = self.paginate_queryset(queryset)
-        serializer = SubscribedAuthorSerializer(
-            page,
-            many=True,
-            context={'request': request},
+        return self.get_paginated_response(
+            SubscribedAuthorSerializer(
+                self.paginate_queryset(
+                    User.objects.filter(
+                        following_subscriptions__follower=request.user
+                    ).order_by('id')
+                ),
+                many=True,
+                context={'request': request},
+            ).data,
         )
-        return self.get_paginated_response(serializer.data)
 
     @action(
         detail=True,

@@ -1,7 +1,8 @@
-from recipes.management.commands.base_json_fixture_command import (
+from recipes.models import Ingredient
+
+from .base_json_fixture_command import (
     BaseJsonFixtureCommand,
 )
-from recipes.models import Ingredient
 
 
 class Command(BaseJsonFixtureCommand):

@@ -52,7 +52,6 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name': 'пользователь',
                 'verbose_name_plural': 'пользователи',
-                'db_table': 'users_user',
                 'ordering': ('username',),
             },
             managers=[

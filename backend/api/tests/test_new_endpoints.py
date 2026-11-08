@@ -72,7 +72,7 @@ def test_download_shopping_cart_sums_ingredients(user):
 
     response = client.get('/api/recipes/download_shopping_cart/')
     assert response.status_code == 200
-    content = response.content.decode('utf-8')
+    content = b''.join(response.streaming_content).decode('utf-8')
     assert 'мука (г) - 150' in content
 
 

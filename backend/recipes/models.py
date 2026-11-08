@@ -9,13 +9,11 @@ MIN_INGREDIENT_AMOUNT = 1
 
 
 class User(AbstractUser):
-    username_validator = UnicodeUsernameValidator()
-
     username = models.CharField(
         'Никнейм',
         max_length=150,
         unique=True,
-        validators=[username_validator],
+        validators=[UnicodeUsernameValidator()],
     )
     email = models.EmailField('Электронная почта', max_length=254, unique=True)
     first_name = models.CharField('Имя', max_length=150)
@@ -28,10 +26,12 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
-        db_table = 'users_user'
         ordering = ('username',)
         verbose_name = 'пользователь'
         verbose_name_plural = 'пользователи'
+
+    def __str__(self):
+        return self.username
 
 
 class Tag(models.Model):
@@ -42,6 +42,9 @@ class Tag(models.Model):
         ordering = ('name',)
         verbose_name = 'тег'
         verbose_name_plural = 'теги'
+
+    def __str__(self):
+        return self.name
 
 
 class Ingredient(models.Model):
@@ -58,6 +61,9 @@ class Ingredient(models.Model):
                 name='unique_ingredient_name_measurement_unit',
             )
         ]
+
+    def __str__(self):
+        return f'{self.name} ({self.measurement_unit})'
 
 
 class Recipe(models.Model):
@@ -92,6 +98,9 @@ class Recipe(models.Model):
         verbose_name = 'рецепт'
         verbose_name_plural = 'рецепты'
 
+    def __str__(self):
+        return self.name
+
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
@@ -124,6 +133,9 @@ class RecipeIngredient(models.Model):
                 name='positive_amount',
             ),
         ]
+
+    def __str__(self):
+        return f'{self.recipe} -> {self.ingredient}: {self.amount}'
 
 
 class UserRecipeRelation(models.Model):

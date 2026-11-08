@@ -17,7 +17,7 @@
 ## Backend (локально)
 
 ```bash
-git clone https://github.com/your_username/foodgram.git
+git clone https://github.com/daniilgromovgit/foodgram.git
 cd foodgram
 cd backend
 python -m venv .venv
@@ -32,7 +32,7 @@ python manage.py runserver
 ## Запуск в Docker
 
 ```bash
-cd infra
+cd /path/to/foodgram/infra
 cp .env.example .env
 docker compose up -d --build
 ```
@@ -71,16 +71,17 @@ POSTGRES_PASSWORD=foodgram_password
 
 ## Адрес сайта
 
-- [Production](http://foddygramm.duckdns.org/)
+- [Production](https://foddygramm.duckdns.org/)
 
 ## Локальный запуск frontend
 
 ```bash
-cd infra
+cd /path/to/foodgram/infra
 docker compose up
 ```
 ## После запуска
 - [Приложение](http://localhost)
+- [Админ-зона](http://localhost/admin/)
 - [Документация API](http://localhost/api/docs/)
 
 ## CI/CD: auto deploy
@@ -89,7 +90,7 @@ Workflow находится в `.github/workflows/ci_cd.yml` и делает с�
 
 - на PR и push в `main` запускает линтер и тесты;
 - на push в `main` собирает backend image и передаёт его на ВМ по SSH;
-- запускает миграции и подготовку ревью-данных.
+- запускает миграции.
 
 Если Docker Engine или Compose plugin отсутствуют, workflow установит их на Ubuntu-ВМ
 из системных пакетов и запустит Docker. Для этого `SSH_USER` должен иметь
@@ -108,20 +109,9 @@ Docker включается при загрузке системы, а PostgreSQ
 После деплоя workflow также автоматически выполняет:
 
 - `python manage.py migrate --noinput`
-- `python manage.py prepare_review_data`
-
-Для подготовки ревью-данных на сервере:
-
-```bash
-docker compose exec backend python manage.py prepare_review_data
-```
-
-Команда обеспечивает:
-
-- доступ в админку: `review` / `review@admin.ru` / `revw1admn`;
-- минимум 7 рецептов, из них минимум 4 у одного пользователя, отличного от `review`.
 
 ## Автор
 
 - ФИО: Громов Даниил Николаевич
 - Контакт: [GitHub](https://github.com/daniilgromovgit)
+- Telegram: [@daniilgromov67](https://t.me/daniilgromov67)

@@ -231,6 +231,5 @@ jobs:
             docker_cmd compose -f infra/docker-compose.yml down || true
             docker_cmd compose -f infra/docker-compose.yml up -d
             docker_cmd compose -f infra/docker-compose.yml exec -T backend python manage.py migrate --noinput
-            docker_cmd compose -f infra/docker-compose.yml exec -T backend python manage.py prepare_review_data
             docker_cmd compose -f infra/docker-compose.yml ps
             docker_cmd compose -f infra/docker-compose.yml logs --tail=50 backend

@@ -16,8 +16,14 @@ SHOPPING_LIST_TEMPLATE_TEXT = (
 
 Рецепты:
 {% for recipe in recipes %}
-{{ forloop.counter }}. {{ recipe.name }} - {{ recipe.author }}
-{% if recipe.tags %} ({{ recipe.tags|join:", " }}){% endif %}
+{{ forloop.counter }}. {{ recipe.name }} - {{ recipe.author.username }}
+{% if recipe.tags.all %}
+(
+{% for tag in recipe.tags.all %}
+{{ tag.name }}{% if not forloop.last %}, {% endif %}
+{% endfor %}
+)
+{% endif %}
 {% empty %}
 Нет рецептов.
 {% endfor %}
