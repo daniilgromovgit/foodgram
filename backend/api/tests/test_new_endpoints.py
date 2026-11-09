@@ -74,6 +74,27 @@ def test_download_shopping_cart_sums_ingredients(user):
     assert response.status_code == 200
     content = b''.join(response.streaming_content).decode('utf-8')
     assert 'Мука (г) - 150' in content
+    date_line = next(
+        line for line in content.splitlines()
+        if line.startswith('Дата составления: ')
+    )
+    assert date_line.count(' ') == 4
+    content_lines = content.splitlines()
+    assert f'1. Блины - {user.username}' in content_lines
+    assert f'2. Оладьи - {user.username}' in content_lines
+
+
+@pytest.mark.django_db
+def test_recipe_short_link_redirect(user, recipe):
+    client = APIClient()
+
+    link_response = client.get(f'/api/recipes/{recipe.id}/get-link/')
+    assert link_response.status_code == 200
+    assert link_response.json()['short-link'].endswith(f'/s/{recipe.id}/')
+
+    redirect_response = client.get(f'/s/{recipe.id}/')
+    assert redirect_response.status_code == 302
+    assert redirect_response['Location'] == f'/recipes/{recipe.id}'
 
 
 @pytest.mark.django_db
