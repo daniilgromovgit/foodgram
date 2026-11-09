@@ -127,7 +127,7 @@ jobs:
             -P "${{ secrets.SSH_PORT || '22' }}" \
             -o StrictHostKeyChecking=yes \
             infra/docker-compose.yml \
-            infra/nginx.conf \
+            infra/Caddyfile \
             infra/.env.example \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_DIR }}/infra/"
 

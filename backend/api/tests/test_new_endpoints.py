@@ -88,9 +88,14 @@ def test_download_shopping_cart_sums_ingredients(user):
 def test_recipe_short_link_redirect(user, recipe):
     client = APIClient()
 
-    link_response = client.get(f'/api/recipes/{recipe.id}/get-link/')
+    link_response = client.get(
+        f'/api/recipes/{recipe.id}/get-link/',
+        HTTP_X_FORWARDED_PROTO='https',
+    )
     assert link_response.status_code == 200
-    assert link_response.json()['short-link'].endswith(f'/s/{recipe.id}/')
+    short_link = link_response.json()['short-link']
+    assert short_link.startswith('https://')
+    assert short_link.endswith(f'/s/{recipe.id}/')
 
     redirect_response = client.get(f'/s/{recipe.id}/')
     assert redirect_response.status_code == 302

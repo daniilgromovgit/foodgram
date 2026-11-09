@@ -1,0 +1,49 @@
+{$SITE_DOMAIN} {
+    encode zstd gzip
+    request_body {
+        max_size 10MB
+    }
+
+    @docs_without_slash path /api/docs
+    redir @docs_without_slash /api/docs/ 308
+
+    handle_path /api/docs/* {
+        root * /srv/docs
+        @docs_index path /
+        rewrite @docs_index /redoc.html
+        file_server
+    }
+
+    handle_path /media/* {
+        root * /srv/media
+        file_server
+    }
+
+    handle_path /backend_static/* {
+        root * /srv/backend_static
+        file_server
+    }
+
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /s/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /static/* {
+        root * /srv/frontend
+        file_server
+    }
+
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+}

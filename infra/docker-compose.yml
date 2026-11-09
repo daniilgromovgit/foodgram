@@ -5,6 +5,8 @@ volumes:
   static_data:
   media_data:
   frontend_data:
+  caddy_data:
+  caddy_config:
 
 services:
   db:
@@ -44,18 +46,24 @@ services:
     volumes:
       - frontend_data:/app/result_build/
 
-  nginx:
-    image: nginx:1.25.4-alpine
+  proxy:
+    image: caddy:2-alpine
     container_name: foodgram-proxy
     restart: unless-stopped
     ports:
       - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-foddygramm.duckdns.org}
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - frontend_data:/usr/share/nginx/html/
-      - static_data:/static/
-      - media_data:/media/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - frontend_data:/srv/frontend:ro
+      - static_data:/srv/backend_static:ro
+      - media_data:/srv/media:ro
+      - ../docs/:/srv/docs:ro
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - backend
       - frontend
