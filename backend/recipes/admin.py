@@ -247,6 +247,7 @@ class RecipeAdmin(admin.ModelAdmin):
             f'<img src="{recipe.image.url}" alt="{recipe.name}" width="80" />'
         )
 
+
 @admin.register(Favorite, ShoppingCart)
 class UserRecipeRelationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'recipe')
