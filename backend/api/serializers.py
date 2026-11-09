@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+
 from recipes.models import (
     MIN_COOKING_TIME,
     MIN_INGREDIENT_AMOUNT,
@@ -15,7 +17,6 @@ from recipes.models import (
     Subscription,
     Tag,
 )
-from rest_framework import serializers
 
 User = get_user_model()
 

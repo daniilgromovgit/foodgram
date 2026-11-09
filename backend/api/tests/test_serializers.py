@@ -1,5 +1,4 @@
 import pytest
-from recipes.models import Ingredient, RecipeIngredient
 from rest_framework import serializers
 
 from api.serializers import (
@@ -7,6 +6,7 @@ from api.serializers import (
     RecipeWriteSerializer,
     UserSerializer,
 )
+from recipes.models import Ingredient, RecipeIngredient
 
 
 @pytest.mark.django_db

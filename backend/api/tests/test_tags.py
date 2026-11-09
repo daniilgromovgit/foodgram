@@ -1,6 +1,7 @@
 import pytest
-from recipes.models import Tag
 from rest_framework.test import APIClient
+
+from recipes.models import Tag
 
 
 @pytest.mark.django_db

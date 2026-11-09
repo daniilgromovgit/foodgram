@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import recipe_short_link_redirect
+from recipes.views import recipe_short_link_redirect
 
 urlpatterns = [
     path(

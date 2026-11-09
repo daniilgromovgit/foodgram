@@ -7,6 +7,9 @@ extend-exclude = ["migrations"]
 select = ["E", "F", "W", "I"]
 extend-select = ["E501"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["api", "foodgram", "recipes"]
+
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"

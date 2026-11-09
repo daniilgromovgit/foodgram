@@ -1,7 +1,7 @@
-from ...models import Tag
-from .base_json_fixture_command import (
+from recipes.management.commands.base_json_fixture_command import (
     BaseJsonFixtureCommand,
 )
+from recipes.models import Tag
 
 
 class Command(BaseJsonFixtureCommand):

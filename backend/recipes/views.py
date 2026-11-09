@@ -1,7 +1,7 @@
 from django.http import HttpResponseNotFound
 from django.shortcuts import redirect
 
-from .models import Recipe
+from recipes.models import Recipe
 
 
 def recipe_short_link_redirect(request, pk):

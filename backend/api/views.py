@@ -4,6 +4,27 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
+from rest_framework.response import Response
+
+from api.filters import IngredientNameSearchFilter, RecipeFilterBackend
+from api.pagination import FoodgramPagination
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (
+    AvatarSerializer,
+    IngredientSerializer,
+    RecipeReadSerializer,
+    RecipeShortReadSerializer,
+    RecipeWriteSerializer,
+    SubscribedAuthorSerializer,
+    TagSerializer,
+)
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -14,27 +35,6 @@ from recipes.models import (
     Tag,
 )
 from recipes.shopping_list import build_shopping_list_content
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import (
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-)
-from rest_framework.response import Response
-
-from .filters import IngredientNameSearchFilter, RecipeFilterBackend
-from .pagination import FoodgramPagination
-from .permissions import IsAuthorOrReadOnly
-from .serializers import (
-    AvatarSerializer,
-    IngredientSerializer,
-    RecipeReadSerializer,
-    RecipeShortReadSerializer,
-    RecipeWriteSerializer,
-    SubscribedAuthorSerializer,
-    TagSerializer,
-)
 
 User = get_user_model()
 

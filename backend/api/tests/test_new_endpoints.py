@@ -1,4 +1,6 @@
 import pytest
+from rest_framework.test import APIClient
+
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -7,7 +9,6 @@ from recipes.models import (
     ShoppingCart,
     Subscription,
 )
-from rest_framework.test import APIClient
 
 
 @pytest.mark.django_db
