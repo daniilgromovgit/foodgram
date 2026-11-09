@@ -1,5 +1,4 @@
 from recipes.models import Ingredient
-
 from .base_json_fixture_command import (
     BaseJsonFixtureCommand,
 )

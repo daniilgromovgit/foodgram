@@ -204,7 +204,7 @@ class UserViewSet(DjoserUserViewSet):
                 self.paginate_queryset(
                     User.objects.filter(
                         following_subscriptions__follower=request.user
-                    ).order_by('id')
+                    )
                 ),
                 many=True,
                 context={'request': request},
